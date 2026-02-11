@@ -1,37 +1,37 @@
 import { useState } from 'react'
 import { useMovieSearch } from '../hooks/useMovieSearch'
-import type { Movie, TierMovie } from '../types'
-
-const POSTER_BASE = 'https://image.tmdb.org/t/p/w185'
+import { DraggableSearchResult } from './DraggableSearchResult'
+import type { Movie } from '../types'
 
 interface Props {
   apiKey: string
-  onAddMovie: (movie: TierMovie) => void
-  onChangeApiKey: () => void
+  usedMovieIds: Set<number>
+  selectedMovieId: number | null
+  onSelectMovie: (movie: Movie) => void
 }
 
-export function MovieSearch({ apiKey, onAddMovie, onChangeApiKey }: Props) {
+export function MovieSearch({ apiKey, usedMovieIds, selectedMovieId, onSelectMovie }: Props) {
   const [query, setQuery] = useState('')
+  const [showWarning, setShowWarning] = useState(false)
   const { results, loading, error, search } = useMovieSearch(apiKey)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value)
-    search(e.target.value)
+    const val = e.target.value
+    setQuery(val)
+    if (!apiKey && val.trim()) {
+      setShowWarning(true)
+      return
+    }
+    setShowWarning(false)
+    search(val)
   }
 
-  const handleAdd = (movie: Movie) => {
-    const tierMovie: TierMovie = {
-      ...movie,
-      instanceId: `${movie.id}-${Date.now()}`,
-    }
-    onAddMovie(tierMovie)
-  }
+  const availableResults = results.filter(m => !usedMovieIds.has(m.id))
 
   return (
     <div className="movie-search">
       <div className="search-header">
         <h2>Add Movies</h2>
-        <button className="link-btn" onClick={onChangeApiKey}>Change API Key</button>
       </div>
       <input
         type="text"
@@ -40,33 +40,22 @@ export function MovieSearch({ apiKey, onAddMovie, onChangeApiKey }: Props) {
         onChange={handleChange}
         className="search-input"
       />
+      {showWarning && (
+        <div className="no-key-banner">
+          <span>No API key set. Go to Settings to configure one.</span>
+          <button className="dismiss-btn" onClick={() => setShowWarning(false)}>×</button>
+        </div>
+      )}
       {error && <p className="search-error">{error}</p>}
       {loading && <p className="search-loading">Searching...</p>}
       <div className="search-results">
-        {results.map(movie => (
-          <div
+        {availableResults.map(movie => (
+          <DraggableSearchResult
             key={movie.id}
-            className="search-result-item"
-            onClick={() => handleAdd(movie)}
-            title={`Add ${movie.title}`}
-          >
-            {movie.poster_path ? (
-              <img
-                src={`${POSTER_BASE}${movie.poster_path}`}
-                alt={movie.title}
-                className="result-poster"
-              />
-            ) : (
-              <div className="result-poster no-poster-sm">
-                <span>{movie.title[0]}</span>
-              </div>
-            )}
-            <div className="result-info">
-              <p className="result-title">{movie.title}</p>
-              <p className="result-year">{movie.release_date?.slice(0, 4) ?? 'N/A'}</p>
-            </div>
-            <button className="add-btn">+</button>
-          </div>
+            movie={movie}
+            isSelected={movie.id === selectedMovieId}
+            onSelect={onSelectMovie}
+          />
         ))}
       </div>
     </div>

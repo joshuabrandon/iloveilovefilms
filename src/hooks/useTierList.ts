@@ -4,22 +4,30 @@ import type { Tier, TierListState, TierMovie } from '../types'
 const STORAGE_KEY = 'movie-tier-list'
 
 const DEFAULT_TIERS: Tier[] = [
-  { id: 'S', label: 'S', color: '#ff7f7f', movies: [] },
-  { id: 'A', label: 'A', color: '#ffbf7f', movies: [] },
-  { id: 'B', label: 'B', color: '#ffff7f', movies: [] },
-  { id: 'C', label: 'C', color: '#7fff7f', movies: [] },
-  { id: 'D', label: 'D', color: '#7fbfff', movies: [] },
-  { id: 'F', label: 'F', color: '#bf7fff', movies: [] },
+  { id: 'S', label: 'S', color: '#FFD700', movies: [] },
+  { id: 'A', label: 'A', color: '#C0C0C0', movies: [] },
+  { id: 'B', label: 'B', color: '#CD7F32', movies: [] },
+  { id: 'C', label: 'C', color: '#DAA520', movies: [] },
+  { id: 'D', label: 'D', color: '#A9A9A9', movies: [] },
+  { id: 'F', label: 'F', color: '#2C2C2C', movies: [] },
 ]
 
 function loadState(): TierListState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as TierListState
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      // Migration: move old unranked movies into last tier
+      if (parsed.unranked?.length) {
+        const lastTier = parsed.tiers[parsed.tiers.length - 1]
+        if (lastTier) lastTier.movies.push(...parsed.unranked)
+      }
+      return { tiers: parsed.tiers }
+    }
   } catch {
     // ignore
   }
-  return { tiers: DEFAULT_TIERS, unranked: [] }
+  return { tiers: DEFAULT_TIERS }
 }
 
 function saveState(state: TierListState) {
@@ -33,29 +41,24 @@ export function useTierList() {
     saveState(state)
   }, [state])
 
-  const addToUnranked = (movie: TierMovie) => {
-    setState(prev => {
-      // prevent duplicate instanceIds
-      const already =
-        prev.unranked.some(m => m.instanceId === movie.instanceId) ||
-        prev.tiers.some(t => t.movies.some(m => m.instanceId === movie.instanceId))
-      if (already) return prev
-      return { ...prev, unranked: [...prev.unranked, movie] }
-    })
+  const addToTier = (movie: TierMovie, tierId: string, index: number) => {
+    setState(prev => ({
+      tiers: prev.tiers.map(tier => {
+        if (tier.id !== tierId) return tier
+        const movies = [...tier.movies]
+        movies.splice(index, 0, movie)
+        return { ...tier, movies }
+      }),
+    }))
   }
 
   const moveMovie = (
     movieInstanceId: string,
-    targetTierId: string, // 'unranked' or a tier id
+    targetTierId: string,
     targetIndex: number,
   ) => {
     setState(prev => {
-      // Find and remove the movie from wherever it is
       let movie: TierMovie | undefined
-      let newUnranked = prev.unranked.filter(m => {
-        if (m.instanceId === movieInstanceId) { movie = m; return false }
-        return true
-      })
       const newTiers = prev.tiers.map(tier => ({
         ...tier,
         movies: tier.movies.filter(m => {
@@ -66,31 +69,19 @@ export function useTierList() {
 
       if (!movie) return prev
 
-      if (targetTierId === 'unranked') {
-        newUnranked = [
-          ...newUnranked.slice(0, targetIndex),
-          movie,
-          ...newUnranked.slice(targetIndex),
-        ]
-      } else {
-        return {
-          unranked: newUnranked,
-          tiers: newTiers.map(tier => {
-            if (tier.id !== targetTierId) return tier
-            const movies = [...tier.movies]
-            movies.splice(targetIndex, 0, movie!)
-            return { ...tier, movies }
-          }),
-        }
+      return {
+        tiers: newTiers.map(tier => {
+          if (tier.id !== targetTierId) return tier
+          const movies = [...tier.movies]
+          movies.splice(targetIndex, 0, movie!)
+          return { ...tier, movies }
+        }),
       }
-
-      return { unranked: newUnranked, tiers: newTiers }
     })
   }
 
   const removeMovie = (instanceId: string) => {
     setState(prev => ({
-      unranked: prev.unranked.filter(m => m.instanceId !== instanceId),
       tiers: prev.tiers.map(t => ({
         ...t,
         movies: t.movies.filter(m => m.instanceId !== instanceId),
@@ -99,8 +90,8 @@ export function useTierList() {
   }
 
   const resetTiers = () => {
-    setState({ tiers: DEFAULT_TIERS.map(t => ({ ...t, movies: [] })), unranked: [] })
+    setState({ tiers: DEFAULT_TIERS.map(t => ({ ...t, movies: [] })) })
   }
 
-  return { state, addToUnranked, moveMovie, removeMovie, resetTiers }
+  return { state, addToTier, moveMovie, removeMovie, resetTiers }
 }

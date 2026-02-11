@@ -7,10 +7,9 @@ const POSTER_BASE = 'https://image.tmdb.org/t/p/w185'
 interface Props {
   movie: TierMovie
   onRemove?: (instanceId: string) => void
-  compact?: boolean
 }
 
-export function MovieTile({ movie, onRemove, compact = false }: Props) {
+export function MovieTile({ movie, onRemove }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: movie.instanceId })
 
@@ -28,13 +27,13 @@ export function MovieTile({ movie, onRemove, compact = false }: Props) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`movie-tile ${compact ? 'compact' : ''} ${isDragging ? 'dragging' : ''}`}
+      className={`movie-tile ${isDragging ? 'dragging' : ''}`}
       title={`${movie.title} (${movie.release_date?.slice(0, 4) ?? '?'})`}
       {...attributes}
       {...listeners}
     >
       {posterUrl ? (
-        <img src={posterUrl} alt={movie.title} draggable={false} />
+        <img src={posterUrl} alt={movie.title} draggable={false} crossOrigin="anonymous" />
       ) : (
         <div className="no-poster">
           <span>{movie.title}</span>

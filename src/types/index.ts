@@ -20,5 +20,4 @@ export interface Tier {
 
 export interface TierListState {
   tiers: Tier[]
-  unranked: TierMovie[]
 }

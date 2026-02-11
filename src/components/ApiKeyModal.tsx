@@ -2,14 +2,16 @@ import { useState } from 'react'
 
 interface Props {
   onSubmit: (key: string) => void
+  onClose: () => void
 }
 
-export function ApiKeyModal({ onSubmit }: Props) {
+export function ApiKeyModal({ onSubmit, onClose }: Props) {
   const [value, setValue] = useState('')
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose} title="Close">×</button>
         <h2>TMDB API Key Required</h2>
         <p>
           This app uses The Movie Database (TMDB) to search for movies and fetch
