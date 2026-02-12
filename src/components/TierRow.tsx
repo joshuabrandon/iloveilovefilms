@@ -1,28 +1,42 @@
+import { useRef } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { MovieTile } from './MovieTile'
-import type { Tier } from '../types'
+import type { Tier, TierMovie } from '../types'
 
-function isDark(hex: string): boolean {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return (r * 299 + g * 587 + b * 114) / 1000 < 128
-}
+const PREMIUM_TIERS = ['S', 'A', 'B']
 
 interface Props {
   tier: Tier
   onRemove: (instanceId: string) => void
   hasSelection: boolean
   onTierClick?: (tierId: string) => void
+  onTileSelect?: (movie: TierMovie, pos: { x: number; y: number }) => void
+  selectedInstanceId?: string | null
 }
 
-export function TierRow({ tier, onRemove, hasSelection, onTierClick }: Props) {
+export function TierRow({ tier, onRemove, hasSelection, onTierClick, onTileSelect, selectedInstanceId }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `tier-${tier.id}` })
+  const labelRef = useRef<HTMLDivElement>(null)
+  const isPremium = PREMIUM_TIERS.includes(tier.id)
 
   const handleClick = () => {
     if (hasSelection && onTierClick) onTierClick(tier.id)
   }
+
+  const handleLabelMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = labelRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const mx = ((e.clientX - rect.left) / rect.width * 100).toFixed(1) + '%'
+    const my = ((e.clientY - rect.top) / rect.height * 100).toFixed(1) + '%'
+    el.style.setProperty('--mx', mx)
+    el.style.setProperty('--my', my)
+  }
+
+  const labelStyle = isPremium
+    ? {}
+    : { backgroundColor: tier.color }
 
   return (
     <div
@@ -30,7 +44,12 @@ export function TierRow({ tier, onRemove, hasSelection, onTierClick }: Props) {
       className={`tier-row ${isOver ? 'drop-over' : ''} ${hasSelection ? 'selectable' : ''}`}
       onClick={handleClick}
     >
-      <div className="tier-label" style={{ backgroundColor: tier.color, color: isDark(tier.color) ? '#fff' : '#000' }}>
+      <div
+        ref={labelRef}
+        className={`tier-label ${isPremium ? `tier-label-premium tier-label-${tier.id}` : `tier-label-matte tier-label-${tier.id}`}`}
+        style={labelStyle}
+        onMouseMove={isPremium ? handleLabelMouseMove : undefined}
+      >
         {tier.label}
       </div>
       <SortableContext
@@ -43,11 +62,10 @@ export function TierRow({ tier, onRemove, hasSelection, onTierClick }: Props) {
               key={movie.instanceId}
               movie={movie}
               onRemove={onRemove}
+              onSelect={onTileSelect}
+              isSelected={movie.instanceId === selectedInstanceId}
             />
           ))}
-          {tier.movies.length === 0 && (
-            <div className="tier-empty">{hasSelection ? 'Click to place here' : 'Drop movies here'}</div>
-          )}
         </div>
       </SortableContext>
     </div>

@@ -12,9 +12,10 @@ export function DragOverlayTile({ movie }: Props) {
     : null
 
   return (
-    <div className="movie-tile" style={{ opacity: 0.85, cursor: 'grabbing' }}>
+    <div className="movie-tile" style={{ opacity: 0.85, cursor: 'grabbing', width: 80, height: 120 }}>
       {posterUrl ? (
-        <img src={posterUrl} alt={movie.title} draggable={false} crossOrigin="anonymous" />
+        <img src={posterUrl} alt={movie.title} draggable={false} crossOrigin="anonymous"
+          style={{ width: 80, height: 120, objectFit: 'cover', display: 'block' }} />
       ) : (
         <div className="no-poster">
           <span>{movie.title}</span>

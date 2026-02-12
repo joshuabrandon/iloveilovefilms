@@ -5,21 +5,17 @@ import type { TierListState } from '../types'
 interface Props {
   state: TierListState
   onRemove: (instanceId: string) => void
-  onReset: () => void
-  title: string
   hasSelection: boolean
   onTierClick?: (tierId: string) => void
+  onTileSelect?: (movie: import('../types').TierMovie, pos: { x: number; y: number }) => void
+  selectedInstanceId?: string | null
 }
 
 export const TierList = forwardRef<HTMLDivElement, Props>(
-  function TierList({ state, onRemove, onReset, title, hasSelection, onTierClick }, ref) {
+  function TierList({ state, onRemove, hasSelection, onTierClick, onTileSelect, selectedInstanceId }, ref) {
     return (
-      <div className="tier-list-wrapper">
-        <div className="tier-list-header">
-          <h2>{title}</h2>
-          <button className="danger-btn" onClick={onReset}>Reset All</button>
-        </div>
-        <div ref={ref} className="tier-rows">
+      <div ref={ref} className="tier-list-wrapper">
+        <div className="tier-rows">
           {state.tiers.map(tier => (
             <TierRow
               key={tier.id}
@@ -27,6 +23,8 @@ export const TierList = forwardRef<HTMLDivElement, Props>(
               onRemove={onRemove}
               hasSelection={hasSelection}
               onTierClick={onTierClick}
+              onTileSelect={onTileSelect}
+              selectedInstanceId={selectedInstanceId}
             />
           ))}
         </div>

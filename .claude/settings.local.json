@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd tier list enhancements: drag-from-search, click-to-place, editable title, resizable sidebar, and UI polish\n\n- Lift DndContext to App to enable dragging movies directly from search to tier rows\n- Remove Unranked section; add DraggableSearchResult and DragOverlayTile components\n- Add click-to-select then click-to-place flow as alternative to drag-and-drop\n- Prevent duplicate movies in tier list by filtering them from search results\n- Add editable title with contentEditable inline editing and save-as-image via html-to-image\n- Add resizable sidebar with useResizable hook and collapse toggle\n- Move API key settings to header, make modal closeable with backdrop click\n- Update tier label colors to gold/silver/bronze theme with auto text contrast\n- Center tier list title, increase tier row height, fix scrollbar spacing\n- Add scrolling support for overflowing tier lists\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)"
+    ]
+  }
+}

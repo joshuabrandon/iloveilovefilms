@@ -7,8 +7,8 @@ const DEFAULT_TIERS: Tier[] = [
   { id: 'S', label: 'S', color: '#FFD700', movies: [] },
   { id: 'A', label: 'A', color: '#C0C0C0', movies: [] },
   { id: 'B', label: 'B', color: '#CD7F32', movies: [] },
-  { id: 'C', label: 'C', color: '#DAA520', movies: [] },
-  { id: 'D', label: 'D', color: '#A9A9A9', movies: [] },
+  { id: 'C', label: 'C', color: '#666666', movies: [] },
+  { id: 'D', label: 'D', color: '#494949', movies: [] },
   { id: 'F', label: 'F', color: '#2C2C2C', movies: [] },
 ]
 
