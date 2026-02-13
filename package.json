@@ -31,5 +31,12 @@
     "globals": "^15.14.0",
     "typescript": "~5.6.2",
     "vite": "^6.0.5"
-  }
+  },
+  "scripts": {
+  "dev": "vite",
+  "build": "tsc -b && vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "deploy": "npm run build && gh-pages -d dist"
+}
 }
