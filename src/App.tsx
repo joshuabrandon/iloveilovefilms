@@ -13,7 +13,6 @@ import {
   type CollisionDetection,
   type Modifier,
 } from '@dnd-kit/core'
-import { toPng } from 'html-to-image'
 import { ApiKeyModal } from './components/ApiKeyModal'
 import { MovieSearch } from './components/MovieSearch'
 import { TierList } from './components/TierList'
@@ -69,45 +68,154 @@ export default function App() {
     return () => window.removeEventListener('mousemove', handler)
   }, [pendingPlacement])
 
+  // ── Layout constants ───────────────────────────────────────────────────
+  const TILE_W        = 80
+  const TILE_H        = 120
+  const TILE_GAP      = 4
+  const MOVIES_PAD    = 6     // padding inside .tier-movies (all sides)
+  const LABEL_W       = 60
+  const TIER_GAP      = 4     // gap between rows in .tier-rows
+  const BORDER        = 2
+  const CONTENT_PAD   = 40    // each side, from .app-content { padding: 16px 40px }
+  const SIDEBAR_W     = 393   // .app-sidebar width + 1px border
+  const MARGIN        = 10
+  const HEADER_H      = 48
+  const PIXEL_RATIO   = 2
+
+  const BG_COLOR      = '#d6cdae'
+  const TITLE_COLOR   = '#2a1800'
+  const SURFACE_COLOR = '#1e1e1e'
+  const LABEL_TXT     = '#ffffff'
+  const NO_POSTER_BG  = '#2a2a2a'
+  const NO_POSTER_TXT = '#e8e8e8'
+  const POSTER_BASE   = 'https://image.tmdb.org/t/p/w185'
+
+  // Compute snapped layout: tier list width that fits exactly N whole tiles
+  const computeSnappedLayout = (windowWidth: number) => {
+    const available = windowWidth - SIDEBAR_W - 2 * CONTENT_PAD
+    const n = Math.max(1, Math.floor(
+      (available - LABEL_W - MOVIES_PAD * 2 - BORDER * 2 + TILE_GAP) / (TILE_W + TILE_GAP)
+    ))
+    const width = LABEL_W + TILE_W * n + TILE_GAP * (n - 1) + MOVIES_PAD * 2 + BORDER * 2
+    return { tilesPerRow: n, tierListWidth: width }
+  }
+
+  const [layout, setLayout] = useState(() => computeSnappedLayout(window.innerWidth))
+
+  useEffect(() => {
+    const onResize = () => setLayout(computeSnappedLayout(window.innerWidth))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  // rowH: tier row height based on movie count
+  const rowH = (n: number) => {
+    if (n === 0) return 140
+    return Math.max(140, 12 + 124 * Math.ceil(n / layout.tilesPerRow))
+  }
+
   const handleSaveImage = useCallback(async () => {
-    const node = tierListRef.current
-    if (!node) return
     const d = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
     const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
     const filename = `${title.replace(/[^a-zA-Z0-9 ]/g, '_')}_${stamp}.png`
 
-    // Build a wrapper: title (header) on top, live tier list below.
-    // Temporarily move the live node into the wrapper so html-to-image can
-    // capture computed styles/images from the live DOM. Everything is
-    // restored synchronously before the browser paints.
-    const { width } = node.getBoundingClientRect()
-    const wrapper = document.createElement('div')
-    wrapper.style.cssText = `width:${Math.round(width)}px;display:flex;flex-direction:column;gap:4px`
-    const titleEl = document.createElement('div')
-    titleEl.className = 'export-title'
-    titleEl.textContent = title
-    wrapper.appendChild(titleEl)
+  const tierListH = state.tiers.reduce((sum, tier, i) =>
+    sum + rowH(tier.movies.length) + (i < state.tiers.length - 1 ? TIER_GAP : 0), 0)
 
-    node.before(wrapper)       // insert wrapper in .app-content before node
-    wrapper.appendChild(node)  // move live node into wrapper (title above, tiers below)
+  // Pre-load all poster images in parallel
+  const loadImg = (src: string): Promise<HTMLImageElement | null> =>
+    new Promise(resolve => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload  = () => resolve(img)
+      img.onerror = () => resolve(null)
+      img.src = src
+    })
 
-    const promise = toPng(wrapper, { backgroundColor: '#d6cdae', pixelRatio: 2 })
+  const allMovies = state.tiers.flatMap(t => t.movies)
+  const loaded    = await Promise.all(
+    allMovies.map(m => m.poster_path ? loadImg(`${POSTER_BASE}${m.poster_path}`) : Promise.resolve(null))
+  )
+  const posterMap = new Map<string, HTMLImageElement | null>()
+  allMovies.forEach((m, i) => posterMap.set(m.instanceId, loaded[i]))
 
-    // Restore DOM synchronously — before any browser paint
-    wrapper.before(node)  // move node back to its original position
-    wrapper.remove()      // remove the now-empty wrapper
+  // Create canvas
+  const imageWidth  = MARGIN + layout.tierListWidth + MARGIN
+  const imageHeight = HEADER_H + MARGIN + tierListH + MARGIN
 
-    try {
-      const dataUrl = await promise
-      const link = document.createElement('a')
-      link.download = filename
-      link.href = dataUrl
-      link.click()
-    } catch (err) {
-      console.error('Failed to save image:', err)
+  const canvas  = document.createElement('canvas')
+  canvas.width  = imageWidth  * PIXEL_RATIO
+  canvas.height = imageHeight * PIXEL_RATIO
+
+  const ctx = canvas.getContext('2d')!
+  ctx.scale(PIXEL_RATIO, PIXEL_RATIO)
+
+  // Beige background
+  ctx.fillStyle = BG_COLOR
+  ctx.fillRect(0, 0, imageWidth, imageHeight)
+
+  // Title centred in header band
+  ctx.fillStyle     = TITLE_COLOR
+  ctx.font          = '700 20px system-ui, -apple-system, BlinkMacSystemFont, sans-serif'
+  ctx.textAlign     = 'center'
+  ctx.textBaseline  = 'middle'
+  ctx.letterSpacing = '0.5px'
+  ctx.fillText(title, imageWidth / 2, HEADER_H / 2)
+
+  // Draw tier rows
+  let y = HEADER_H + MARGIN
+  for (const tier of state.tiers) {
+    const rh = rowH(tier.movies.length)
+    const rx = MARGIN
+
+    // Row surface background
+    ctx.fillStyle = SURFACE_COLOR
+    ctx.fillRect(rx, y, layout.tierListWidth, rh)
+
+    // Label coloured background
+    ctx.fillStyle = tier.color
+    ctx.fillRect(rx, y, LABEL_W, rh)
+
+    // Label text
+    ctx.fillStyle    = LABEL_TXT
+    ctx.font         = '700 28px system-ui, -apple-system, BlinkMacSystemFont, sans-serif'
+    ctx.textAlign    = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(tier.label, rx + LABEL_W / 2, y + rh / 2)
+
+    // Movie tiles
+    for (let i = 0; i < tier.movies.length; i++) {
+      const movie = tier.movies[i]
+      const col   = i % layout.tilesPerRow
+      const row   = Math.floor(i / layout.tilesPerRow)
+      const tx    = rx + LABEL_W + MOVIES_PAD + col * (TILE_W + TILE_GAP)
+      const ty    = y  + MOVIES_PAD           + row * (TILE_H + TILE_GAP)
+
+      const img = posterMap.get(movie.instanceId)
+      if (img) {
+        ctx.drawImage(img, tx, ty, TILE_W, TILE_H)
+      } else {
+        ctx.fillStyle    = NO_POSTER_BG
+        ctx.fillRect(tx, ty, TILE_W, TILE_H)
+        ctx.fillStyle    = NO_POSTER_TXT
+        ctx.font         = '11px system-ui, -apple-system, BlinkMacSystemFont, sans-serif'
+        ctx.textAlign    = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(movie.title, tx + TILE_W / 2, ty + TILE_H / 2, TILE_W - 8)
+      }
     }
-  }, [title])
+
+    y += rh + TIER_GAP
+  }
+
+  // Download
+  const dataUrl = canvas.toDataURL('image/png')
+  const link    = document.createElement('a')
+  link.download = filename
+  link.href     = dataUrl
+  link.click()
+}, [title, state])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -316,6 +424,7 @@ export default function App() {
               onTierClick={handleTierClick}
               onTileSelect={handleSelectTileMovie}
               selectedInstanceId={pendingTierInstanceId}
+              style={{ width: layout.tierListWidth }}
             />
           </section>
         </main>

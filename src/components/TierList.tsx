@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+import React from 'react'
 import { TierRow } from './TierRow'
 import type { TierListState } from '../types'
 
@@ -9,12 +10,13 @@ interface Props {
   onTierClick?: (tierId: string) => void
   onTileSelect?: (movie: import('../types').TierMovie, pos: { x: number; y: number }) => void
   selectedInstanceId?: string | null
+  style?: React.CSSProperties
 }
 
 export const TierList = forwardRef<HTMLDivElement, Props>(
-  function TierList({ state, onRemove, hasSelection, onTierClick, onTileSelect, selectedInstanceId }, ref) {
+  function TierList({ state, onRemove, hasSelection, onTierClick, onTileSelect, selectedInstanceId, style }, ref) {
     return (
-      <div ref={ref} className="tier-list-wrapper">
+      <div ref={ref} className="tier-list-wrapper" style={style}>
         <div className="tier-rows">
           {state.tiers.map(tier => (
             <TierRow

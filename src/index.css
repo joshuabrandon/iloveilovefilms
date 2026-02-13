@@ -338,16 +338,6 @@ button, input, textarea, select {
   gap: 4px;
 }
 
-.export-title {
-  text-align: center;
-  font-size: 1.3rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #2a1800;
-  padding: 6px 0 10px;
-}
-
-
 
 .tier-rows {
   display: flex;

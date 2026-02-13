@@ -13,20 +13,6 @@ const DEFAULT_TIERS: Tier[] = [
 ]
 
 function loadState(): TierListState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      // Migration: move old unranked movies into last tier
-      if (parsed.unranked?.length) {
-        const lastTier = parsed.tiers[parsed.tiers.length - 1]
-        if (lastTier) lastTier.movies.push(...parsed.unranked)
-      }
-      return { tiers: parsed.tiers }
-    }
-  } catch {
-    // ignore
-  }
   return { tiers: DEFAULT_TIERS }
 }
 
@@ -40,6 +26,12 @@ export function useTierList() {
   useEffect(() => {
     saveState(state)
   }, [state])
+
+  useEffect(() => {
+    const clearOnClose = () => localStorage.removeItem(STORAGE_KEY)
+    window.addEventListener('beforeunload', clearOnClose)
+    return () => window.removeEventListener('beforeunload', clearOnClose)
+  }, [])
 
   const addToTier = (movie: TierMovie, tierId: string, index: number) => {
     setState(prev => ({
