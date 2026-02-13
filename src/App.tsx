@@ -112,7 +112,7 @@ export default function App() {
     const d = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
     const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
-    const filename = `${title.replace(/[^a-zA-Z0-9 ]/g, '_')}_${stamp}.png`
+    const filename = `${title.replace(/[^a-zA-Z0-9]/g, '')}_${stamp}.png`
 
   // Fixed 10-tile-per-row layout for saved image
   const SAVE_TILES_PER_ROW = 10
