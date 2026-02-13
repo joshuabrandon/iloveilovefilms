@@ -4,6 +4,7 @@ import { useMovieSearch } from '../hooks/useMovieSearch'
 import { useGenreMap } from '../hooks/useGenreMap'
 import { DraggableSearchResult } from './DraggableSearchResult'
 import type { Movie } from '../types'
+import tmdbLogo from '../assets/tmdb-logo.svg'
 
 const TMDB_BASE = 'https://api.themoviedb.org/3'
 
@@ -72,6 +73,7 @@ export function MovieSearch({ apiKey, usedMovieIds, selectedMovieId, onSelectMov
     <div className="movie-search">
       <div className="search-header">
         <h2>Add Movies</h2>
+        <img src={tmdbLogo} alt="TMDB Logo" className="tmdb-logo" />
       </div>
       <div className="search-input-wrap">
         <input

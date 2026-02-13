@@ -153,6 +153,12 @@ button, input, textarea, select {
   color: #000;
 }
 
+.tmdb-logo {
+  height: 20px;
+  width: auto;
+  opacity: 0.85;
+}
+
 .search-input-wrap {
   position: relative;
   flex-shrink: 0;
@@ -662,4 +668,11 @@ button, input, textarea, select {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+.tmdb-attribution {
+  font-size: 0.65rem;
+  color: #888;
+  text-align: center;
+  padding: 6px 12px;
 }

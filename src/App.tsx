@@ -429,6 +429,7 @@ export default function App() {
               selectedInstanceId={pendingTierInstanceId}
               style={{ width: layout.tierListWidth }}
             />
+            <p className="tmdb-attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
           </section>
         </main>
         <DragOverlay modifiers={[snapOverlayToCenter]}>
