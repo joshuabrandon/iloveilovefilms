@@ -83,7 +83,7 @@ export default function App() {
   const PIXEL_RATIO   = 2
 
   const BG_COLOR      = '#d6cdae'
-  const TITLE_COLOR   = '#2a1800'
+
   const SURFACE_COLOR = '#1e1e1e'
   const LABEL_TXT     = '#ffffff'
   const NO_POSTER_BG  = '#2a2a2a'
@@ -108,20 +108,19 @@ export default function App() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // rowH: tier row height based on movie count
-  const rowH = (n: number) => {
-    if (n === 0) return 140
-    return Math.max(140, 12 + 124 * Math.ceil(n / layout.tilesPerRow))
-  }
-
   const handleSaveImage = useCallback(async () => {
     const d = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
     const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
     const filename = `${title.replace(/[^a-zA-Z0-9 ]/g, '_')}_${stamp}.png`
 
+  // Fixed 10-tile-per-row layout for saved image
+  const SAVE_TILES_PER_ROW = 10
+  const SAVE_TIER_LIST_W   = LABEL_W + TILE_W * SAVE_TILES_PER_ROW + TILE_GAP * (SAVE_TILES_PER_ROW - 1) + MOVIES_PAD * 2 + BORDER * 2  // 912
+  const saveRowH = (n: number) => n === 0 ? 140 : Math.max(140, 12 + 124 * Math.ceil(n / SAVE_TILES_PER_ROW))
+
   const tierListH = state.tiers.reduce((sum, tier, i) =>
-    sum + rowH(tier.movies.length) + (i < state.tiers.length - 1 ? TIER_GAP : 0), 0)
+    sum + saveRowH(tier.movies.length) + (i < state.tiers.length - 1 ? TIER_GAP : 0), 0)
 
   // Pre-load all poster images in parallel
   const loadImg = (src: string): Promise<HTMLImageElement | null> =>
@@ -141,7 +140,7 @@ export default function App() {
   allMovies.forEach((m, i) => posterMap.set(m.instanceId, loaded[i]))
 
   // Create canvas
-  const imageWidth  = MARGIN + layout.tierListWidth + MARGIN
+  const imageWidth  = MARGIN + SAVE_TIER_LIST_W + MARGIN
   const imageHeight = HEADER_H + MARGIN + tierListH + MARGIN
 
   const canvas  = document.createElement('canvas')
@@ -155,23 +154,27 @@ export default function App() {
   ctx.fillStyle = BG_COLOR
   ctx.fillRect(0, 0, imageWidth, imageHeight)
 
-  // Title centred in header band
-  ctx.fillStyle     = TITLE_COLOR
+  // Dark header band (matches app-header: var(--surface))
+  ctx.fillStyle = SURFACE_COLOR
+  ctx.fillRect(0, 0, imageWidth, HEADER_H)
+
+  // Title centred between image top and tier list top
+  ctx.fillStyle     = NO_POSTER_TXT
   ctx.font          = '700 20px system-ui, -apple-system, BlinkMacSystemFont, sans-serif'
   ctx.textAlign     = 'center'
   ctx.textBaseline  = 'middle'
   ctx.letterSpacing = '0.5px'
-  ctx.fillText(title, imageWidth / 2, HEADER_H / 2)
+  ctx.fillText(title, imageWidth / 2, (HEADER_H + MARGIN) / 2)
 
   // Draw tier rows
   let y = HEADER_H + MARGIN
   for (const tier of state.tiers) {
-    const rh = rowH(tier.movies.length)
+    const rh = saveRowH(tier.movies.length)
     const rx = MARGIN
 
     // Row surface background
     ctx.fillStyle = SURFACE_COLOR
-    ctx.fillRect(rx, y, layout.tierListWidth, rh)
+    ctx.fillRect(rx, y, SAVE_TIER_LIST_W, rh)
 
     // Label coloured background
     ctx.fillStyle = tier.color
@@ -187,8 +190,8 @@ export default function App() {
     // Movie tiles
     for (let i = 0; i < tier.movies.length; i++) {
       const movie = tier.movies[i]
-      const col   = i % layout.tilesPerRow
-      const row   = Math.floor(i / layout.tilesPerRow)
+      const col   = i % SAVE_TILES_PER_ROW
+      const row   = Math.floor(i / SAVE_TILES_PER_ROW)
       const tx    = rx + LABEL_W + MOVIES_PAD + col * (TILE_W + TILE_GAP)
       const ty    = y  + MOVIES_PAD           + row * (TILE_H + TILE_GAP)
 
