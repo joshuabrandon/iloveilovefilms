@@ -1,5 +1,7 @@
 # Movie Tier List
 
+**[Live demo →](https://joshuabrandon.github.io/iloveilovefilms/)**
+
 A browser-based tool for ranking movies into tiers using The Movie Database (TMDB).
 
 ## Features
@@ -36,7 +38,7 @@ npm install
 
 ## TMDB API Key Setup
 
-This app requires a TMDB API key to search for movies. You can get a free key at [themoviedb.org](https://www.themoviedb.org/settings/api).
+The live site uses a pre-configured API key — no setup required. For local development, you have two options:
 
 **Option 1 — Environment variable (recommended):**
 
@@ -45,6 +47,8 @@ Create a `.env` file in the project root:
 ```
 VITE_TMDB_API_KEY=your_api_key_here
 ```
+
+You can get a free key at [themoviedb.org](https://www.themoviedb.org/settings/api).
 
 **Option 2 — In-app settings:**
 
@@ -66,6 +70,7 @@ Then open `https://localhost:5173` in your browser. Accept the self-signed certi
 | `npm run build` | Build for production |
 | `npm run preview` | Preview production build locally |
 | `npm run lint` | Run ESLint |
+| `npm run deploy` | Build and deploy to GitHub Pages |
 
 ## Disclosure
 
